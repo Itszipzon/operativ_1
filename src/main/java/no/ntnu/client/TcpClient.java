@@ -32,6 +32,7 @@ public class TcpClient {
         if (connect()) {
             boolean running = true;
             while (running) {
+                System.out.println("Enter Command:");
                 Scanner scanner = new Scanner(System.in);
                 if (scanner.hasNextLine()) {
                     String message = scanner.nextLine();
