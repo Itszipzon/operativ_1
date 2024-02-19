@@ -4,90 +4,84 @@ import static no.ntnu.server.Server.PORT_NUMBER;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-
-import no.ntnu.Command;
-import no.ntnu.Message;
-import no.ntnu.MessageSerializer;
-import no.ntnu.message.AdditionMessage;
-import no.ntnu.message.DivisionMessage;
-import no.ntnu.message.MultiplicationMessage;
-import no.ntnu.message.SubtractionMessage;
+import java.util.Scanner;
 
 public class TcpClient {
-    private static final String SERVER_HOST = "localhost";
     private Socket socket;
-    private PrintWriter socketWriter;
-    private BufferedReader socketReader;
+    private PrintWriter writer;
+    private BufferedReader reader;
 
-    public boolean start() {
+    public boolean connect() {
         boolean connected = false;
+
         try {
-            socket = new Socket(SERVER_HOST, PORT_NUMBER);
-            socketWriter = new PrintWriter(socket.getOutputStream(), true);
-            socketReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            socket = new Socket("localhost", PORT_NUMBER);
+            writer = new PrintWriter(socket.getOutputStream(), true);
+            reader = new BufferedReader(new java.io.InputStreamReader(socket.getInputStream()));
             connected = true;
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         return connected;
     }
 
-    public void startListening(MessageListener listener) {
+    public void run() throws IOException {
+        if (connect()) {
+            boolean running = true;
+            while (running) {
+                Scanner scanner = new Scanner(System.in);
+                if (scanner.hasNextLine()) {
+                    String message = scanner.nextLine();
+                    if (message.equals("exit")) {
+                        running = false;
+                    } else {
+                        send(message);
+                    }
+                }
+            }
+        }
+    }
+
+    public void startListening() {
         new Thread(() -> {
-            Message message = null;
+            String message = "";
             do {
                 try {
-                    if (socketReader != null) {
-                        String plainMessage = socketReader.readLine();
-                        message = MessageSerializer.fromString(plainMessage);
-                        handleIncomingMessage(message, listener);
+                    if (reader != null) {
+                        message = reader.readLine();
+                        handleIncomingMessage(message);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-            } while (message != null);
+            } while (!message.isEmpty());
         }).start();
     }
 
-    private void handleIncomingMessage(Message message, MessageListener listener) {
-        if (message instanceof AdditionMessage) {
-            listener.messageReceived("Addition result: " + ((AdditionMessage) message).getResult());
-        } else if (message instanceof MultiplicationMessage) {
-            listener.messageReceived("Multiplication result: " + ((MultiplicationMessage) message).getResult());
-        } else if (message instanceof DivisionMessage) {
-            listener.messageReceived("Division result: " + ((DivisionMessage) message).getResult());
-        } else if (message instanceof SubtractionMessage) {
-            listener.messageReceived("Subtraction result: " + ((SubtractionMessage) message).getResult());
-        }
+    private void handleIncomingMessage(String message) {
+        System.out.println("Received message: " + message);
     }
 
-    public void stop() {
-        if (socket != null) {
-            try {
-                socket.close();
-                socket = null;
-                socketReader = null;
-                socketWriter = null;
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    public boolean sendCommand(Command command) {
+    public boolean send(String message) throws IOException {
         boolean sent = false;
-        if (socketWriter != null && socketReader != null) {
-            try {
-                socketWriter.println(MessageSerializer.toString(command));
-                sent = true;
-            } catch (Exception e) {
-                System.err.println("Could not send a command: " + e.getMessage());
-            }
-        }
+        System.out.println("Sending message: " + message);
+        writer.println(message);
+        String serverResponse = reader.readLine();
+        System.out.println("  >>> " + serverResponse);
         return sent;
     }
 
+    public void stop() {
+        try {
+            socket.close();
+            socket = null;
+            writer = null;
+            reader = null;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

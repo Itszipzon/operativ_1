@@ -1,11 +1,9 @@
 package no.ntnu.server;
 
-public class ServerStarter {
-    
+public class ServerStart {
     public static void main(String[] args) {
         ServerLogic logic = new ServerLogic();
-        Server server = new Server(logic);
-        server.startServer();
+        Server server = new Server(logic, true);
+        server.start();
     }
-
 }
