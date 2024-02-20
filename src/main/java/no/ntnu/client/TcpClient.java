@@ -38,6 +38,7 @@ public class TcpClient {
                     String message = scanner.nextLine();
                     if (message.equals("exit")) {
                         running = false;
+                        stop();
                     } else {
                         send(message);
                     }

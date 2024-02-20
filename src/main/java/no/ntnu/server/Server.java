@@ -30,7 +30,7 @@ public class Server {
                 if (client != null) {
                     clients.add(client);
                     
-                    client.run();
+                    client.start();
                 }
             }
         }
